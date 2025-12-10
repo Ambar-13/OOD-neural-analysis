@@ -8,7 +8,7 @@ Following the methodology from Madan et al. (2024), I tested whether Vision Tran
 
 ```bash
 # 1. Clone/download this repository
-cd ood-neural-alignment
+cd OOD-neural-analysis
 
 # 2. Install dependencies, Allen Observatory Data, and setup virtual environment
 chmod +x install.sh
@@ -16,7 +16,7 @@ chmod +x install.sh
 
 # 3. Run the analysis
 python base_neural_analysis.py      # Baseline neural predictivity
-python ood_testing_comprehensive.py  # OOD robustness testing
+python ood_testing_comprehensive_corrected.py  # OOD robustness testing
 ```
 
 Results will be saved to `analysis_results/` folder.
