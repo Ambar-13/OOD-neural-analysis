@@ -16,7 +16,7 @@ chmod +x install.sh
 
 # 3. Run the analysis
 python base_neural_analysis.py      # Baseline neural predictivity
-python ood_testing_comprehensive_corrected.py  # OOD robustness testing
+python run_comprehensive_ood.py  # OOD robustness testing
 ```
 
 Results will be saved to `analysis_results/` folder.
