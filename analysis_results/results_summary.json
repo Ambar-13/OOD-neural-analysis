@@ -1,0 +1,48 @@
+{
+  "rdm_correlations": {
+    "vit_neural": {
+      "correlation": -0.020930878631371667,
+      "p_value": 0.08205185539382236
+    },
+    "resnet_neural": {
+      "correlation": 0.0010711806179480752,
+      "p_value": 0.9290960608829542
+    },
+    "vit_resnet": {
+      "correlation": 0.5361042190540112,
+      "p_value": 0.0
+    }
+  },
+  "neural_predictivity": {
+    "vit": {
+      "median_predictivity": 0.09049530327320099,
+      "mean_predictivity": 0.07553723454475403,
+      "scaler": null
+    },
+    "resnet": {
+      "median_predictivity": 0.0570187047123909,
+      "mean_predictivity": 0.06719620525836945,
+      "scaler": null
+    }
+  },
+  "ood_predictivity": {},
+  "noise_ceilings": {
+    "full": {
+      "lower": 0.6358265895613616,
+      "upper": 0.6358265895613616
+    }
+  },
+  "statistical_tests": {
+    "predictivity_comparison": {
+      "paired_t_test": {
+        "t": 0.6062464766882019,
+        "p": 0.545738695486798
+      },
+      "wilcoxon": {
+        "w": 2323.0,
+        "p": 0.4873426103065558
+      },
+      "cohens_d": 0.06093006581068039
+    }
+  }
+}
