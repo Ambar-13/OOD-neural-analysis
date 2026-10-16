@@ -1,0 +1,5 @@
+.DS_Store
+venv/
+allen_cache/
+results/
+__pycache__/
