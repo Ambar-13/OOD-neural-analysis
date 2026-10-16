@@ -2,7 +2,7 @@
 
 Do not edit by hand. `python write_results_table.py` rewrites this file.
 
-These numbers come from the ORIGINAL pipeline, which had the problems listed in README.md (final-layer features, noise ceiling across neurons, 24 test images, unmatched models). They are kept so the README can be checked against them.
+These numbers come from the December 2025 pipeline (see CHANGELOG.md for how it differs from the current one). They are kept so the record can be checked.
 
 ## Baseline predictivity, 5-fold CV over all 118 images
 
@@ -13,7 +13,7 @@ These numbers come from the ORIGINAL pipeline, which had the problems listed in 
 
 Paired t-test over neurons: p = 0.55; Wilcoxon p = 0.49; Cohen's d = 0.06. The two models are not distinguishable on this data.
 
-The file also records a 'noise ceiling' of 0.636. It was computed by splitting neurons, not trials, and is not a ceiling for per-neuron predictivity. Ignore it.
+The file also records a 'noise ceiling' of 0.636, computed by splitting neurons rather than trials; it is not a per-neuron ceiling and is not used.
 
 ## RDM comparison (Spearman, upper triangles)
 
@@ -23,7 +23,7 @@ The file also records a 'noise ceiling' of 0.636. It was computed by splitting n
 | ResNet vs neural | 0.001 | 0.93 |
 | ViT vs ResNet | 0.536 | 0.0e+00 |
 
-Neither model's final-layer RDM relates to the V1 RDM.
+Neither final-layer RDM is related to the V1 RDM.
 
 ## Out-of-distribution run (single split)
 
@@ -92,4 +92,4 @@ Baseline median r on the 24 test images: ViT 0.1296, ResNet 0.1291.
 
 - ViT retention ranges from 12% (brightness_0.1) to 100% (weather_fog_0.3). 6 conditions are below 50%.
 - ResNet retention ranges from 10% (blur_motion_s10_a45) to 103% (brightness_0.3). 12 conditions are below 50%.
-- With 24 test images the standard error of a single r near 0.13 is about 0.2, so every retention value above is a ratio of two numbers inside their own noise. The bootstrap CIs resample neurons and do not include that image-sampling noise.
+- With 24 test images the standard error of a single r near 0.13 is about 0.2, so the retention values are ratios of two numbers within their own noise. The bootstrap intervals resample neurons and do not include image-sampling noise.

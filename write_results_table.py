@@ -23,9 +23,8 @@ def main():
     lines = ["# Results of the original run (December 2025), generated from the committed JSON", ""]
     lines.append("Do not edit by hand. `python write_results_table.py` rewrites this file.")
     lines.append("")
-    lines.append("These numbers come from the ORIGINAL pipeline, which had the problems listed in README.md "
-                 "(final-layer features, noise ceiling across neurons, 24 test images, unmatched models). "
-                 "They are kept so the README can be checked against them.")
+    lines.append("These numbers come from the December 2025 pipeline (see CHANGELOG.md for how it differs from the "
+                 "current one). They are kept so the record can be checked.")
     lines.append("")
 
     np_ = base["neural_predictivity"]
@@ -38,8 +37,8 @@ def main():
               f"Paired t-test over neurons: p = {st['paired_t_test']['p']:.2f}; Wilcoxon p = {st['wilcoxon']['p']:.2f}; "
               f"Cohen's d = {st['cohens_d']:.2f}. The two models are not distinguishable on this data.",
               "",
-              f"The file also records a 'noise ceiling' of {base['noise_ceilings']['full']['lower']:.3f}. It was computed by "
-              "splitting neurons, not trials, and is not a ceiling for per-neuron predictivity. Ignore it.", ""]
+              f"The file also records a 'noise ceiling' of {base['noise_ceilings']['full']['lower']:.3f}, computed by "
+              "splitting neurons rather than trials; it is not a per-neuron ceiling and is not used.", ""]
 
     rdm = base["rdm_correlations"]
     lines += ["## RDM comparison (Spearman, upper triangles)", "",
@@ -47,7 +46,7 @@ def main():
               f"| ViT vs neural | {rdm['vit_neural']['correlation']:.3f} | {rdm['vit_neural']['p_value']:.2f} |",
               f"| ResNet vs neural | {rdm['resnet_neural']['correlation']:.3f} | {rdm['resnet_neural']['p_value']:.2f} |",
               f"| ViT vs ResNet | {rdm['vit_resnet']['correlation']:.3f} | {rdm['vit_resnet']['p_value']:.1e} |",
-              "", "Neither model's final-layer RDM relates to the V1 RDM.", ""]
+              "", "Neither final-layer RDM is related to the V1 RDM.", ""]
 
     meta = ood["metadata"]
     lines += ["## Out-of-distribution run (single split)", "",
@@ -70,9 +69,9 @@ def main():
               f"{sum(1 for r, _ in vit_r if r < 50)} conditions are below 50%.",
               f"- ResNet retention ranges from {res_r[0][0]:.0f}% ({res_r[0][1]}) to {res_r[-1][0]:.0f}% ({res_r[-1][1]}). "
               f"{sum(1 for r, _ in res_r if r < 50)} conditions are below 50%.",
-              "- With 24 test images the standard error of a single r near 0.13 is about 0.2, so every retention value "
-              "above is a ratio of two numbers inside their own noise. The bootstrap CIs resample neurons and do not "
-              "include that image-sampling noise.", ""]
+              "- With 24 test images the standard error of a single r near 0.13 is about 0.2, so the retention values "
+              "are ratios of two numbers within their own noise. The bootstrap intervals resample neurons and do not "
+              "include image-sampling noise.", ""]
     OUT.write_text("\n".join(lines))
     print(f"wrote {OUT}")
 
