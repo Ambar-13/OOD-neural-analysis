@@ -1,14 +1,10 @@
 """
 Load one Allen Brain Observatory natural-scenes experiment, keeping every trial.
 
-Returns images as float32 (n_images, 224, 224, 3) in [0, 1] and responses as
-float32 (n_images, n_trials, n_neurons), with NaN where an image had fewer
-presentations than the maximum. The trial dimension is what the noise ceiling
-in encoding.py needs; the old loader averaged it away on load.
-
-Response per presentation: mean dF/F over the stimulus frames shifted by
-`lag_frames` to allow for the calcium indicator's delay (the Allen natural
-scenes stimulus lasts 250 ms, about 7 frames at 30 Hz).
+Images: float32 (n_images, 224, 224, 3) in [0, 1]. Responses: float32
+(n_images, n_trials, n_neurons), NaN where an image had fewer presentations.
+A response is the mean dF/F over the stimulus frames, shifted by lag_frames
+for the calcium indicator's delay (250 ms stimulus, about 7 frames at 30 Hz).
 """
 
 import os

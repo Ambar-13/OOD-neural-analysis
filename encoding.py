@@ -1,26 +1,18 @@
 """
-Encoding-model pieces that need only numpy, scipy and scikit-learn.
+Mapping model features to neural responses: ceiling, readouts, scoring, RDMs.
+Numpy, scipy and scikit-learn only, so it can be tested without torch.
 
-Everything that maps model features to neural responses lives here so it can
-be tested without torch or the Allen SDK.
-
-Conventions
-- responses_trials: array (n_images, n_trials, n_neurons), one row per
-  presentation of each image. Missing trials are NaN.
-- responses: array (n_images, n_neurons), the trial mean.
-- features: array (n_images, n_features).
-
-The noise ceiling is per neuron, split-half across trials, Spearman-Brown
-corrected. That is the quantity Conwell et al. 2021 and Madan et al. 2024 use.
-Splitting across neurons instead (what this repo did before) measures how
-consistent the population average is and says nothing about how predictable a
-single neuron is.
+Array conventions:
+  responses_trials  (n_images, n_trials, n_neurons), NaN where a trial is missing
+  responses         (n_images, n_neurons), the trial mean
+  features          (n_images, n_features)
 """
 
 from typing import Dict, Optional
 
 import numpy as np
 from scipy.stats import pearsonr, spearmanr
+from sklearn.decomposition import PCA
 from sklearn.linear_model import RidgeCV
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import StandardScaler
@@ -30,13 +22,8 @@ RIDGE_ALPHAS = np.logspace(-2, 5, 8)
 
 
 def split_half_reliability(responses_trials: np.ndarray, n_splits: int = 20, seed: int = 0) -> np.ndarray:
-    """Per-neuron split-half reliability across trials, Spearman-Brown corrected.
-
-    For each neuron: split the trials of every image into two random halves,
-    average each half across trials, correlate the two half-means across
-    images, then correct for the halving with r_full = 2r / (1 + r). Repeat
-    n_splits times and average. Returns an array (n_neurons,) in [-1, 1].
-    """
+    """Per-neuron noise ceiling: split the trials in half, correlate the two half-means
+    across images, Spearman-Brown correct (2r / (1 + r)), average over n_splits splits."""
     n_images, n_trials, n_neurons = responses_trials.shape
     rng = np.random.RandomState(seed)
     out = np.zeros((n_splits, n_neurons))
@@ -62,11 +49,8 @@ def select_reliable_neurons(reliability: np.ndarray, threshold: float) -> np.nda
 
 
 def reduce_features(features: np.ndarray, n_components: int = 4096, seed: int = 0) -> np.ndarray:
-    """Sparse random projection to n_components, as in Conwell et al. 2021.
-
-    Lets whole spatial feature maps (hundreds of thousands of dims) be used
-    without PCA. Feature sets already at or below n_components are returned as is.
-    """
+    """Sparse random projection to n_components (Conwell et al. 2021), so whole feature maps
+    can be used without PCA. Smaller feature sets are returned unchanged."""
     if features.shape[1] <= n_components:
         return features.astype(np.float32)
     proj = SparseRandomProjection(n_components=n_components, random_state=seed)
@@ -75,20 +59,13 @@ def reduce_features(features: np.ndarray, n_components: int = 4096, seed: int = 
 
 def cv_ridge_scores(features: np.ndarray, responses: np.ndarray, n_folds: int = 5, seed: int = 0,
                     alphas: np.ndarray = RIDGE_ALPHAS) -> Dict[str, np.ndarray]:
-    """Cross-validated ridge regression from features to every neuron at once.
+    """K-fold ridge from features to every neuron; one penalty per neuron, chosen by
+    leave-one-out on the training fold. Held-out predictions are gathered across folds
+    and scored once per neuron, which is steadier than averaging per-fold correlations.
 
-    Outer K-fold over images. Inside each fold: standardise on the training
-    images only, then RidgeCV with one alpha per neuron chosen by efficient
-    leave-one-out on the training images. Predictions are gathered across folds
-    and scored once per neuron on the full held-out vector, which is far more
-    stable than averaging per-fold correlations on 20-image folds.
-
-    Returns dict with 'predictions' (n_images, n_neurons) and 'r' (n_neurons,).
-
-    When the features carry no information about a neuron this scorer gives a
-    slightly negative r (about -0.1 at 118 images), because each fold's model
-    regresses toward its own training mean. A negative median across neurons
-    means 'nothing learned', not 'anti-predicts'.
+    Returns {'predictions': (n_images, n_neurons), 'r': (n_neurons,)}.
+    With uninformative features r comes out slightly negative (about -0.1 at 118
+    images), because each fold regresses toward its own training mean.
     """
     n_images, n_neurons = responses.shape
     predictions = np.zeros((n_images, n_neurons), dtype=np.float32)
@@ -112,13 +89,8 @@ def score_pair(y_true: np.ndarray, y_pred: np.ndarray) -> float:
 
 
 def normalised_r2(r: np.ndarray, reliability: np.ndarray) -> np.ndarray:
-    """Explained variance as a fraction of the per-neuron ceiling.
-
-    r² of the prediction divided by the Spearman-Brown reliability of the
-    neuron (the variance a perfect model of the trial mean could explain).
-    Only defined where the reliability is positive. Not clipped at 1: a value
-    above 1 is a sign the ceiling is underestimated and should be visible.
-    """
+    """r² of the prediction over the neuron's reliability. Undefined where the reliability
+    is not positive; not clipped, so an underestimated ceiling stays visible as a value above 1."""
     out = np.full_like(r, np.nan, dtype=np.float64)
     ok = reliability > 0
     out[ok] = (r[ok] ** 2) / reliability[ok]
@@ -152,11 +124,8 @@ def compare_rdms(rdm_a: np.ndarray, rdm_b: np.ndarray):
 
 
 def rdm_ceiling(responses_trials: np.ndarray, n_splits: int = 20, seed: int = 0) -> float:
-    """Split-half reliability of the neural RDM itself, Spearman-Brown corrected.
-
-    The right ceiling for an RDM comparison: how well the RDM from half the
-    trials matches the RDM from the other half.
-    """
+    """Ceiling for RDM comparisons: how well the RDM from half the trials matches the RDM
+    from the other half, Spearman-Brown corrected."""
     n_images, n_trials, _ = responses_trials.shape
     rng = np.random.RandomState(seed)
     vals = []
@@ -167,3 +136,49 @@ def rdm_ceiling(responses_trials: np.ndarray, n_splits: int = 20, seed: int = 0)
         rho, _ = compare_rdms(compute_rdm(a), compute_rdm(b))
         vals.append(2 * rho / (1 + rho))
     return float(np.mean(vals))
+
+
+class RidgeReadout:
+    """The usual readout: standardise, then ridge with one penalty per neuron."""
+    name = "ridge"
+
+    def __init__(self, alphas=RIDGE_ALPHAS):
+        self.alphas = alphas
+
+    def fit(self, x, y):
+        self.scaler = StandardScaler().fit(x)
+        self.model = RidgeCV(alphas=self.alphas, alpha_per_target=True).fit(self.scaler.transform(x), y)
+        return self
+
+    def predict(self, x):
+        return self.model.predict(self.scaler.transform(x))
+
+
+class LowRankReadout:
+    """Ridge on the top k principal components: a readout with k free directions instead of
+    one per feature."""
+    def __init__(self, k=20, alphas=RIDGE_ALPHAS):
+        self.k, self.alphas = k, alphas
+        self.name = f"ridge_pca{k}"
+
+    def fit(self, x, y):
+        self.scaler = StandardScaler().fit(x)
+        self.pca = PCA(n_components=min(self.k, x.shape[0] - 1, x.shape[1]), random_state=0).fit(self.scaler.transform(x))
+        z = self.pca.transform(self.scaler.transform(x))
+        self.model = RidgeCV(alphas=self.alphas, alpha_per_target=True).fit(z, y)
+        return self
+
+    def predict(self, x):
+        return self.model.predict(self.pca.transform(self.scaler.transform(x)))
+
+
+def rsa_score(features: np.ndarray, responses: np.ndarray) -> float:
+    """Spearman rho between the model RDM and the neural RDM. Nothing is fitted; one number
+    for the image set rather than one per neuron."""
+    rho, _ = compare_rdms(compute_rdm(features), compute_rdm(responses))
+    return rho
+
+
+def regression_readouts():
+    """The fitted readouts, most to least flexible."""
+    return [RidgeReadout(), LowRankReadout(k=100), LowRankReadout(k=20), LowRankReadout(k=5)]

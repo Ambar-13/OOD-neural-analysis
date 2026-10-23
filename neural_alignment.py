@@ -1,22 +1,13 @@
 """
-How well do two matched ImageNet models predict mouse V1, layer by layer?
+Which stage of ViT-S/16 and of ResNet-34 best predicts mouse V1, and how close to the ceiling?
 
     python neural_alignment.py [--reliability 0.5] [--experiment-id N]
 
-Steps
-1. Load one Allen natural-scenes experiment with every trial kept.
-2. Per-neuron noise ceiling: split-half across trials, Spearman-Brown corrected.
-   Keep neurons at or above --reliability.
-3. For each model (ViT-S/16 and ResNet-34, both ImageNet-1k weights) and each
-   stage, sparse-random-project the features to 4096 dims and fit
-   cross-validated ridge to every kept neuron.
-4. Report per-layer median r and median ceiling-normalised r², pick the best
-   layer per model, and compare RDMs at that layer against the neural RDM and
-   its own split-half ceiling.
-
-What this can show: which depth of each model best matches V1, and whether
-the two models differ at their best depth. What it cannot show: anything
-about out-of-distribution behaviour (118 images is too few; see ood_test.py).
+Loads one Allen natural-scenes experiment with every trial, keeps neurons whose
+split-half reliability is at least --reliability, fits cross-validated ridge from
+every stage of each model (random-projected to 4096 dims), and reports per-stage
+median r and ceiling-normalised r². At each model's best stage the model RDM is
+compared with the neural RDM and its ceiling. Writes results/.
 """
 
 import argparse

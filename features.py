@@ -1,14 +1,7 @@
 """
-Layer-by-layer features from two matched ImageNet-1k models.
-
-Both models come from timm with explicit weight tags so the pretraining data
-is the same (ImageNet-1k only). The old code compared torchvision ViT-B/16
-(86M parameters) with ResNet-34 (22M), which is not a matched pair.
-
-Every stage of each model is returned, flattened over space and tokens, so the
-encoding analysis can sweep layers. For mouse visual cortex the best layer is
-early to intermediate (Conwell et al. 2021); the final layer, which the old
-code used, is the worst choice for V1.
+Features from every stage of two matched models: ViT-S/16 and ResNet-34, both with
+ImageNet-1k weights named by explicit timm tag so the pretraining data is the same.
+Each stage's output is flattened over space or tokens.
 """
 
 from typing import Dict, List
